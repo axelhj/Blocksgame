@@ -124,35 +124,14 @@ public class Input {
         buttonEvents.add(event);
     }
 
-    private float getX(MotionEvent evt, int pointerId) {
-        float x = -1;
-        try {
-            x = evt.getX(pointerId);
-        } catch (IllegalArgumentException e) {
-            // Ignored
-        }
-        return x;
-    }
-
-    private float getY(MotionEvent evt, int pointerId) {
-        float y = -1;
-        try {
-            y = evt.getY(pointerId);
-        } catch (IllegalArgumentException e) {
-            // Ignored
-        }
-        return y;
-    }
-
-    private void register(MotionEvent evt) { 
-        int actionInd = evt.getActionIndex();
-        int pointerId= evt.getPointerId(actionInd);
-        float pointX = getX(evt, pointerId);
-        float pointY = getY(evt, pointerId);
-
+    private void register(MotionEvent event) { 
+        int actionIndex = event.getActionIndex();
+        int pointerId = event.getPointerId(actionIndex);
+        float pointX = event.getX(actionIndex);
+        float pointY = event.getY(actionIndex);
         synchronized(inputLock) {
             // Find corresponding button - overlapping button/s is/are (an) error/s
-            if (!pointerToButton.containsKey(pointerId))
+            if (!pointerToButton.containsKey(pointerId)) {
                 for (int i = 0; i < buttons.size(); ++i) {
                     ButtonRecord record = buttons.get(i);
                     if (record.area.contains((int)pointX, (int)pointY)) {
@@ -165,15 +144,16 @@ public class Input {
                         }
                     }
                 }
+            }
         }
     }
 
-    private void update(MotionEvent evt) {
-        int pointerCount = evt.getPointerCount();
+    private void update(MotionEvent event) {
+        int pointerCount = event.getPointerCount();
         for (int i = 0; i < pointerCount; ++i) {
-            float pointX = getX(evt, i);
-            float pointY = getY(evt, i);
-            int pointerId = evt.getPointerId(i);
+            float pointX = event.getX(i);
+            float pointY = event.getY(i);
+            int pointerId = event.getPointerId(i);
             synchronized(inputLock) {
                 if (pointerToButton.containsKey(pointerId)) {
                     ButtonRecord record = buttons.get(pointerToButton.get(pointerId));
@@ -187,7 +167,7 @@ public class Input {
 
     private void removePointer(Integer pointerId, ButtonRecord record) {
         int foundId = record.activePointers.size();
-        while ((--foundId + 1) >= 0) {
+        while (--foundId + 1 >= 0) {
             if (record.activePointers.get(foundId) == pointerId) {
                 record.activePointers.remove(foundId);
                 foundId = -1;
@@ -200,20 +180,20 @@ public class Input {
         pointerToButton.remove(pointerId);
     }
 
-    public boolean handleEvent(MotionEvent evt) {
-        switch (evt.getActionMasked()) {
+    public boolean handleEvent(MotionEvent event) {
+        switch (event.getActionMasked()) {
             case (MotionEvent.ACTION_DOWN): /* no other pointers should currently exist */
             case (MotionEvent.ACTION_POINTER_DOWN):
-                register(evt);
+                register(event);
                 break;
             case (MotionEvent.ACTION_MOVE):
-                update(evt);
+                update(event);
                 break;
             case (MotionEvent.ACTION_UP): /* should be the last pointer left on screen */
             case (MotionEvent.ACTION_POINTER_UP):
             case (MotionEvent.ACTION_CANCEL):
                 synchronized(inputLock) {
-                    int pointerId = evt.getPointerId(evt.getActionIndex());
+                    int pointerId = event.getPointerId(event.getActionIndex());
                     if (pointerToButton.containsKey(pointerId)) {
                         removePointer(pointerId, buttons.get(pointerToButton.get(pointerId)));
                     }
