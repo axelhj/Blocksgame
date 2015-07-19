@@ -18,6 +18,13 @@ import android.view.MotionEvent;
 
 import java.util.Random;
 
+/**
+ * Class that is responsible for the gameloop and its timing. This class
+ * routes the input and knows about the positioning and sizing of the
+ * input buttons of the Blocksgame game. It routes the input towards the various
+ * BlocksgameEngine methods that are responsible for the specifics of the gameplay
+ * logic
+ */
 public class Blocksgame
         implements View.OnTouchListener {
     private static Random rand = new Random();
@@ -36,10 +43,20 @@ public class Blocksgame
 
     private Timer timer;
 
+    /**
+     * Globally accessible function that will return a random integer within the
+     * given range.
+     * @return
+     */
     public static int getRand(int min, int max) {
         return min + rand.nextInt(max - min);
     }
 
+    /**
+     * Constructor. Responsible for constructing the Input object, the Timer object
+     * and setting up the logical buttons of the touchscreen. This handles the
+     * initalization of the input and timing of the game.
+     */
     public Blocksgame(Context context, int gameWidth, int gameHeight) {
         GAME_WIDTH = gameWidth;
         GAME_HEIGHT = gameHeight;
@@ -54,15 +71,16 @@ public class Blocksgame
         buttonToggleScore = input.addButton(0.354f * GAME_WIDTH, 0, 0.3125f * GAME_WIDTH, 0.0625f * GAME_HEIGHT);
     }
 
-    public Bitmap getBitmap(int id, Context context) {
-        return ((BitmapDrawable)context.getResources().getDrawable(id)).getBitmap();
-    }
-
+    /**
+     * This method loads the graphics and the sound resources of the game and
+     * constructs the gameplay logic engine that contains the gameplay shapes
+     * and the gameplay board state.
+     */
     public void loadResources(Context context) {
         SoundPlayer.getInstance().loadResources(context);
         bg = getBitmap(R.drawable.bg_t, context);
         tile = getBitmap(R.drawable.br_t, context);
-        int[] colors = ScoreKeeper.colors;
+        int[] colors = ScoreKeeper.COLORS;
         Bitmap[] sprites = new Bitmap[colors.length / 3 + 1];
         sprites[0] = null;
         int offset = 0;
@@ -75,6 +93,10 @@ public class Blocksgame
         blocksgameEngine = new BlocksgameEngine(10, 20, sprites);
     }
 
+    /**
+     * Update method that accepts and routes the game input and handles the timing of the
+     * game. It updates the gameplay state.
+     */
     public void update() {
         float deltaTime = timer.getDelta();
         Input.EventData event = input.getEvent();
@@ -124,6 +146,10 @@ public class Blocksgame
         }
     }
 
+    /**
+     * This method draws the game, including the hints that are visible when
+     * the game is paused.
+     */
     public void draw(Canvas canvas) {
         canvas.drawBitmap(bg, null, new Rect(0, 0, (int)GAME_WIDTH, (int)GAME_HEIGHT), null);
         if (timer.pausing) {
@@ -131,16 +157,28 @@ public class Blocksgame
             try {
                 Thread.sleep(100);
             } catch (InterruptedException ie) {
-                /* Ignored */
+                // Ignored
             }
         }
         blocksgameEngine.draw(canvas);
     }
 
+    /**
+     * This method handles the motion events that are generated when touch input
+     * is received from the screen and forwards those to the Input handler object.
+     */
     public boolean onTouch(View view, MotionEvent evt) {
         if (input.handleEvent(evt)) {
             view.performClick();
         }
         return true;
+    }
+
+    /**
+     * Helper method to get a bitmap drawable resource given its id and the
+     * Android application context.
+     */
+    private Bitmap getBitmap(int id, Context context) {
+        return ((BitmapDrawable)context.getResources().getDrawable(id)).getBitmap();
     }
 }

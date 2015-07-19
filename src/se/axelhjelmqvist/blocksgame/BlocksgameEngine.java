@@ -5,11 +5,11 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 
 /**
- * Created with IntelliJ IDEA.
- * User: Axel
- * Date: 2013-10-04
- * Time: 14:54
- * To change this template use File | Settings | File Templates.
+ * Class that handles the logic of gameplay of the blocksgame. Holds
+ * a representation of the "field" or board of blocks that are currently
+ * in play aswell as the current shape that the player can control.
+ * Timing and positioning (representation) of blocks falls within this
+ * responsibility.
  */
 public class BlocksgameEngine {
     Shape shape, nextShape;
@@ -36,6 +36,10 @@ public class BlocksgameEngine {
 
     ScoreKeeper score;
 
+    /**
+     * Constructor of the BlocksgameEngine. Setups and initalizes what is
+     * required to handle the logic of the game.
+     */
     public BlocksgameEngine(int sizeX, int sizeY, Bitmap[] sprites) {
         this.sprites = sprites;
         this.sizeX = sizeX;
@@ -57,10 +61,18 @@ public class BlocksgameEngine {
         score = new ScoreKeeper((int)(0.0833f * Blocksgame.GAME_WIDTH), (int)(0.0375f * Blocksgame.GAME_HEIGHT));
     }
 
+    /**
+     * Enables/disables fastdrop of tiles. This usually happens
+     * if the drop-button is continuously pressed.
+     */
     public void fastDrop(boolean status) {
         fastDrop = status;
     }
 
+    /**
+     * Enables/disables the move-left action. This can be continuously
+     * activated to enable fast movement of the current block in play.
+     */
     public void moveLeft(boolean status) {
         fastLeft = status;
         if (fastLeft) {
@@ -69,6 +81,10 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Enables/disables the move-right action. This can be continuously
+     * activated to enable fast movement of the current block in play.
+     */
     public void moveRight(boolean status) {
         fastRight = status;
         if (fastRight) {
@@ -77,6 +93,10 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Rotates the current tile. This is not automatically repeated
+     * if the input is continuously activated.
+     */
     public void rotateTile() {
         int[] tileCoords = assembleCoords(shape.getFuture(0, 0, -1, 3));
         int oobDirection = detectOutOfBounds(tileCoords);
@@ -87,6 +107,12 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Updates the gamestate based on elapsed time. This handles the timing
+     * of auto-repeat actions in the game (that are activated if an input is
+     * continuously activated).
+     * @param dTime
+     */
     public void update(float dTime) {
         timeAccum += dTime;
         float baseSpeed = 0.5f;
@@ -113,12 +139,21 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Helper method to clear the gameplay field to its initial state.
+     */
     private void resetField() {
         for (int i  = 0; i < field.length; ++i) {
             field[i] = 0;
         }
     }
 
+    /**
+     * Method that eliminates a number of rows that are given as the first argument.
+     * The rows are given as indices of the rows. The rows must be given in ascending
+     * order or the indices will change as rows are removed. The remainder of
+     * rows are moved downwards from the top to fill the removed row.
+     */
     private void eliminateRows(int[] rows, int nrRows) {
         for (int i = 0; i < nrRows; ++i) {
             if (rows[i] == sizeY) {
@@ -133,6 +168,12 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * This translates the indices/coordinates of a shape/set of blocks
+     * into the coordinates of the gameplay board. These are returned
+     * as an integer array that is reused for each call (to preclude
+     * GC-induced stutter).
+     */
     private int[] assembleCoords(Shape shape) {
         for (int i = 0; i < workingField.length; ++i) {
             workingField[i] = 0;
@@ -152,6 +193,10 @@ public class BlocksgameEngine {
         return coords;
     }
 
+    /**
+     * This method detects a collission with the gameplay board
+     * and a shape, given its coordinates as an integer array.
+     */
     private int detectCollission(int[] coords) {
         for (int i = 0; i < 4 * 2; i += 2) {
             if (coords[i + 0] == Integer.MIN_VALUE) {
@@ -169,6 +214,11 @@ public class BlocksgameEngine {
         return 0;
     }
 
+    /**
+     * This method detects an out of bounds condition (that a gameplay piece
+     * is outside of the visible gameplay board) of a shape, given its coordiantes
+     * translated in relation the gameboard origin as an integer array.
+     */
     private int detectOutOfBounds(int[] coords) {
         for (int i = 0; i < 4 * 2; i += 2) {
             // Reached the end of list-token
@@ -195,6 +245,11 @@ public class BlocksgameEngine {
         return 0;
     }
 
+    /**
+     * This method detects an out of bounds condition in relation to the horizontal
+     * sides of the gameplay board of a shape, given its coordiantes
+     * translated in relation the gameboard origin as an integer array.
+     */
     private int detectOutOfBoundsVertical(int[] coords) {
         for (int i = 0; i < 4 * 2; i += 2) {
             // Reached the end of list-token
@@ -212,6 +267,12 @@ public class BlocksgameEngine {
         }
         return 0;
     }
+
+    /**
+     * This method detects an out of bounds condition in relation to the vertical
+     * sides of the gameplay board of a shape, given its coordiantes
+     * translated in relation the gameboard origin as an integer array.
+     */
     private int detectOutOfBoundsHorizontal(int[] coords) {
         for (int i = 0; i < 4 * 2; i += 2) {
             // Reached the end of list-token
@@ -230,6 +291,9 @@ public class BlocksgameEngine {
         return 0;
     }
 
+    /**
+     * Method that blits the given shape into the gameplay board.
+     */
     private void insertShape(Shape shape) {
         int tileX = 0, tileY = 0, fieldIndex = 0;
         for (int i = 3; i < 3 * 5; i += 3) {
@@ -243,6 +307,11 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Inserts into the given integer array, a number of indices indicating
+     * which rows contains no gaps, ie. are completed or full. These rows
+     * can then be removed given that the number returned is greater than zero.
+     */
     private int checkScore(int[] result) {
         int resultCounter = 0;
         if (shape.y < 0) {
@@ -273,11 +342,16 @@ public class BlocksgameEngine {
         return resultCounter;
     }
 
+    /**
+     * Performs the required logical operations that are needed to move the
+     * shape that is currently in play downwards for one step. This includes
+     * performing operations such as removing completed lines and
+     * invoking a method to calculate scoring and give points.
+     */
     private void moveDown() {
         int[] collissionCandidates = assembleCoords(shape.getFuture(0, 1));
         if (detectOutOfBoundsVertical(collissionCandidates) == 4 ||
-            detectCollission(collissionCandidates) != 0)
-        {
+                detectCollission(collissionCandidates) != 0) {
             insertShape(shape);
             for (int i = 0; i < 4; ++i) workingField[i] = 0;
             int[] completeRows = workingField;
@@ -298,6 +372,10 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Method that is used for when a shape needs to be moved horizontally
+     * in relation to the gampelay board.
+     */
     private void translateShape(int steps) {
         Shape future = shape.getFuture(steps, 0);
         int[] tileCoords = assembleCoords(future);;
@@ -308,6 +386,11 @@ public class BlocksgameEngine {
         }
     }
 
+    /**
+     * Swap the offscreen preview so that it becomes the tile that is
+     * currently in play, and calculates a new random tile to be visible
+     * in the preview field.
+     */
     private void nextTile() {
         // Swap the shapes
         int[] bitmap = shape.bitmap;
@@ -328,13 +411,17 @@ public class BlocksgameEngine {
         shape.x = (sizeX / 2) - 1;
 
         // Update next shape
-        int color = Blocksgame.getRand(0, ScoreKeeper.colors.length / 3);
-        ShapeTool.setShape(nextShape, Blocksgame.getRand(0, ShapeTool.layouts.length / (3 * 5)), color);
+        int color = Blocksgame.getRand(0, ScoreKeeper.COLORS.length / 3);
+        ShapeTool.setShape(nextShape, Blocksgame.getRand(0, ShapeTool.LAYOUTS.length / (3 * 5)), color);
         ShapeTool.rotateShape(nextShape, 1); // To fit the layout
         int flip = Blocksgame.getRand(0, 4);
         if (flip < 2) ShapeTool.flipShape(nextShape, flip);
     }
 
+    /**
+     * Draws the tile that is currently in play, the tile that is currently visible in the
+     * preview box, aswell as the tiles that are currently in play using a Canvas object.
+     */
     public void draw(Canvas canvas) {
         int x = 0, y= 0, i = 0, color = 0;
         // Draw playing-tile
